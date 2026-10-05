@@ -22,7 +22,14 @@ function ProgressRing({ percent }) {
   );
 }
 
-function Sidebar({ todos, filter, onFilter, onClearDone }) {
+function Sidebar({
+  todos,
+  filter,
+  onFilter,
+  onClearDone,
+  theme,
+  onToggleTheme,
+}) {
   const doneCount = todos.filter(FILTERS.done.test).length;
   const percent = todos.length ? (doneCount / todos.length) * 100 : 0;
   const today = new Date().toLocaleDateString(undefined, {
@@ -40,6 +47,15 @@ function Sidebar({ todos, filter, onFilter, onClearDone }) {
           <h1>Todo App</h1>
         </div>
       </div>
+
+      <button
+        className="theme-toggle"
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+      >
+        {theme === "light" ? "Dark mode" : "Light mode"}
+      </button>
 
       <div className="summary">
         <ProgressRing percent={percent} />

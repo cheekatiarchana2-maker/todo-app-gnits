@@ -12,11 +12,11 @@ const request = async (url, options) => {
 
 export const getTodos = () => request(API_URL);
 
-export const createTodo = (title) =>
+export const createTodo = (title, priority, dueDate, category) =>
   request(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, priority, dueDate, category }),
   });
 
 export const updateTodo = (id, data) =>

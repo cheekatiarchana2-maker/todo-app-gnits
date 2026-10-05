@@ -5,9 +5,16 @@ import Sidebar from "./components/Sidebar";
 import TodoForm from "./components/TodoForm";
 import TodoItem from "./components/TodoItem";
 
+const TODOS_PER_PAGE = 10;
+
 function App() {
   const [todos, setTodos] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [theme, setTheme] = useState(() =>
+    localStorage.getItem("todo-app-theme") === "dark" ? "dark" : "light"
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -28,9 +35,14 @@ function App() {
     );
   }, []);
 
-  const handleAdd = (title) =>
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("todo-app-theme", theme);
+  }, [theme]);
+
+  const handleAdd = (title, priority, dueDate, category) =>
     run(async () => {
-      const newTodo = await createTodo(title);
+      const newTodo = await createTodo(title, priority, dueDate, category);
       setTodos((prev) => [newTodo, ...prev]);
     });
 
@@ -55,15 +67,34 @@ function App() {
       setTodos((prev) => prev.filter((t) => !t.completed));
     });
 
-  const filteredTodos = todos.filter(FILTERS[filter].test);
+  const filteredTodos = todos
+    .filter(FILTERS[filter].test)
+    .filter((todo) =>
+      todo.title.toLowerCase().includes(search.trim().toLowerCase())
+    );
+  const pageCount = Math.ceil(filteredTodos.length / TODOS_PER_PAGE);
+  const currentPage = Math.min(page, Math.max(pageCount, 1));
+  const pageTodos = filteredTodos.slice(
+    (currentPage - 1) * TODOS_PER_PAGE,
+    currentPage * TODOS_PER_PAGE
+  );
 
   return (
     <div className="layout">
       <Sidebar
         todos={todos}
         filter={filter}
-        onFilter={setFilter}
+        onFilter={(nextFilter) => {
+          setFilter(nextFilter);
+          setPage(1);
+        }}
         onClearDone={handleClearDone}
+        theme={theme}
+        onToggleTheme={() =>
+          setTheme((currentTheme) =>
+            currentTheme === "light" ? "dark" : "light"
+          )
+        }
       />
 
       <main className="panel content">
@@ -75,6 +106,17 @@ function App() {
         </header>
 
         <TodoForm onAdd={handleAdd} />
+        <input
+          className="search-input"
+          type="search"
+          aria-label="Search todos"
+          placeholder="Search tasks..."
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
 
         {error && (
           <div className="error" role="alert">
@@ -91,14 +133,16 @@ function App() {
           <div className="empty">
             <img src="/logo.png" alt="" />
             <p>
-              {filter === "done"
+              {search.trim()
+                ? `No tasks found for "${search.trim()}".`
+                : filter === "done"
                 ? "Nothing completed yet"
                 : "You're all caught up. Add a task above."}
             </p>
           </div>
         ) : (
           <ul className="todo-list">
-            {filteredTodos.map((todo) => (
+            {pageTodos.map((todo) => (
               <TodoItem
                 key={todo._id}
                 todo={todo}
@@ -107,6 +151,38 @@ function App() {
               />
             ))}
           </ul>
+        )}
+
+        {!loading && pageCount > 1 && (
+          <nav className="pagination" aria-label="Todo list pages">
+            <button
+              type="button"
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            {Array.from({ length: pageCount }, (_, index) => {
+              const pageNumber = index + 1;
+              return (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  aria-current={currentPage === pageNumber ? "page" : undefined}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === pageCount}
+            >
+              Next
+            </button>
+          </nav>
         )}
       </main>
     </div>

@@ -18,7 +18,8 @@ const createTodo = async (req, res) => {
     res.status(201).json(todo);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    const status = err.name === "ValidationError" ? 400 : 500;
+    res.status(status).json({ message: err.message });
   }
 };
 
@@ -27,6 +28,7 @@ const updateTodo = async (req, res) => {
   try {
     const todo = await Todo.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
+      runValidators: true,
     });
 
     if (!todo) {
@@ -36,7 +38,8 @@ const updateTodo = async (req, res) => {
     res.status(200).json(todo);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    const status = err.name === "ValidationError" ? 400 : 500;
+    res.status(status).json({ message: err.message });
   }
 };
 
